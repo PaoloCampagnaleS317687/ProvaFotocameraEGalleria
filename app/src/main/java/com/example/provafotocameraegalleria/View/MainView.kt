@@ -3,6 +3,7 @@ package com.example.provafotocameraegalleria.View
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,7 +36,7 @@ import com.example.provafotocameraegalleria.ViewModel.PhotoViewModel
 import com.example.provafotocameraegalleria.ViewModel.Screen
 
 @Composable
-fun MainScreen (vm : PhotoViewModel = viewModel(), galleryLauncher: ActivityResultLauncher<String>) {
+fun MainScreen (vm : PhotoViewModel = viewModel(), galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>) {
     when (vm.screen) {
         Screen.BASE ->
             BaseComponent(
@@ -76,8 +77,8 @@ fun BaseComponent (
     photoBitmap : Bitmap?,
     photoURI : Uri?,
     openCamera : () -> Unit,
-    galleryLauncher: ActivityResultLauncher<String>,
-    openGallery : (ActivityResultLauncher<String>) -> Unit,
+    galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>,
+    openGallery : (ActivityResultLauncher<PickVisualMediaRequest>) -> Unit,
     deletePhoto : () -> Unit
 ) {
     val circleSize = 200

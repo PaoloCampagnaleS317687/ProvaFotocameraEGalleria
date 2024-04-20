@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
@@ -34,9 +35,9 @@ class PhotoViewModel : ViewModel() {
     var photoURI by mutableStateOf<Uri?>(null)
         private set
 
-    fun openGallery(galleryLauncher: ActivityResultLauncher<String>) {
+    fun openGallery(galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>) {
         screen = Screen.GALLERY
-        galleryLauncher.launch("image/*")
+        galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
 
     fun managePickProfilePictureFromGallery (uri: Uri?) {

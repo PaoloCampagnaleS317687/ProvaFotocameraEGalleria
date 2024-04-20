@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var photoViewModel: PhotoViewModel
 
-    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         photoViewModel.managePickProfilePictureFromGallery(uri)
     }
 
