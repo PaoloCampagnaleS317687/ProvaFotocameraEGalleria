@@ -4,7 +4,9 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -34,6 +38,8 @@ import coil.request.ImageRequest
 import com.example.provafotocameraegalleria.R
 import com.example.provafotocameraegalleria.ViewModel.PhotoViewModel
 import com.example.provafotocameraegalleria.ViewModel.Screen
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 @Composable
 fun MainScreen (vm : PhotoViewModel = viewModel(), galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>) {
@@ -41,32 +47,38 @@ fun MainScreen (vm : PhotoViewModel = viewModel(), galleryLauncher: ActivityResu
         Screen.BASE ->
             BaseComponent(
                 vm.fullName.value,
-                vm.photoBitmap,
-                vm.photoURI,
+                vm.pictureBitmap,
+                vm.pictureURI,
                 vm::openCamera,
                 galleryLauncher,
                 vm::openGallery,
-                vm::deletePhoto
+                vm::deletePicture
             )
         Screen.PHOTO ->
-            BaseComponent(
-                vm.fullName.value,
-                vm.photoBitmap,
-                vm.photoURI,
-                vm::openCamera,
-                galleryLauncher,
-                vm::openGallery,
-                vm::deletePhoto
+            CameraComponent(
+                vm.isCameraFacingBack,
+                vm::switchCamera,
+                vm.isFlashAvailable,
+                vm::defineFlashAvailable,
+                vm::defineFlashUnavailable,
+                vm.isFlashOn,
+                vm::switchFlash,
+                vm.imageCapture,
+                //vm.cameraExecutor,
+                vm.temporaryPicture,
+                vm::takePicture,
+                vm::deleteTemporaryPicture,
+                vm::saveTemporaryPicture
             )
         Screen.GALLERY ->
             BaseComponent(
                 vm.fullName.value,
-                vm.photoBitmap,
-                vm.photoURI,
+                vm.pictureBitmap,
+                vm.pictureURI,
                 vm::openCamera,
                 galleryLauncher,
                 vm::openGallery,
-                vm::deletePhoto
+                vm::deletePicture
             )
     }
 }
@@ -89,7 +101,14 @@ fun BaseComponent (
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         if (photoBitmap != null) {
-            Monogram(fullName, circleSize)
+            Image(
+                painter = BitmapPainter(photoBitmap.asImageBitmap()),
+                contentDescription = "The picture you just take",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(circleSize.dp)
+            )
         }
         else if (photoURI != null) {
             AsyncImage(
@@ -100,7 +119,9 @@ fun BaseComponent (
                 placeholder = painterResource(R.drawable.image_not_found),
                 contentDescription = "Your profile picture",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.clip(CircleShape).size(circleSize.dp)
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(circleSize.dp)
             )
         }
         else {
