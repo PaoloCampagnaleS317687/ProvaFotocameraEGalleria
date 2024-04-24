@@ -15,40 +15,20 @@ import androidx.lifecycle.ViewModel
 
 class PhotoViewModel : ViewModel() {
 
-    var screen by mutableStateOf(Screen.BASE)
-        private set
-
-    fun openCamera () {
-        screen = Screen.PHOTO
-    }
-
-    fun returnToBase () {
-        screen = Screen.BASE
-    }
-
     var fullName = mutableStateOf("Mario Rossi")
-        private set
-
-    var photoBitmap by mutableStateOf<Bitmap?>(null)
         private set
 
     var photoURI by mutableStateOf<Uri?>(null)
         private set
 
-    fun openGallery(galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>) {
-        screen = Screen.GALLERY
-        galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    fun pickProfilePicture (uri: Uri?) {
+        if ( uri != null ) {
+            photoURI = uri
+        }
     }
 
-    fun managePickProfilePictureFromGallery (uri: Uri?) {
-        photoURI = uri
-        screen = Screen.BASE
-    }
-
-    fun deletePhoto () {
-        photoBitmap = null
+    fun deleteProfilePicture () {
         photoURI = null
     }
-
 
 }

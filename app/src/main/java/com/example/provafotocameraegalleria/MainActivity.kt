@@ -19,15 +19,9 @@ import com.example.provafotocameraegalleria.ui.theme.ProvaFotocameraEGalleriaThe
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var photoViewModel: PhotoViewModel
-
-    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        photoViewModel.managePickProfilePictureFromGallery(uri)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        photoViewModel = ViewModelProvider(this).get(PhotoViewModel::class.java)
+
         setContent {
             ProvaFotocameraEGalleriaTheme {
                 // A surface container using the 'background' color from the theme
@@ -35,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(photoViewModel, galleryLauncher)
+                    MainScreen()
                 }
             }
         }

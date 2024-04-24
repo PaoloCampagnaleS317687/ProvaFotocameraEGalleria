@@ -1,9 +1,11 @@
 package com.example.provafotocameraegalleria.View
 
-import android.graphics.Bitmap
+import android.content.Context
 import android.net.Uri
-import androidx.activity.result.ActivityResultLauncher
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,70 +30,69 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.provafotocameraegalleria.R
 import com.example.provafotocameraegalleria.ViewModel.PhotoViewModel
-import com.example.provafotocameraegalleria.ViewModel.Screen
+import java.io.File
 
+@Preview
 @Composable
-fun MainScreen (vm : PhotoViewModel = viewModel(), galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>) {
-    when (vm.screen) {
-        Screen.BASE ->
-            BaseComponent(
-                vm.fullName.value,
-                vm.photoBitmap,
-                vm.photoURI,
-                vm::openCamera,
-                galleryLauncher,
-                vm::openGallery,
-                vm::deletePhoto
-            )
-        Screen.PHOTO ->
-            BaseComponent(
-                vm.fullName.value,
-                vm.photoBitmap,
-                vm.photoURI,
-                vm::openCamera,
-                galleryLauncher,
-                vm::openGallery,
-                vm::deletePhoto
-            )
-        Screen.GALLERY ->
-            BaseComponent(
-                vm.fullName.value,
-                vm.photoBitmap,
-                vm.photoURI,
-                vm::openCamera,
-                galleryLauncher,
-                vm::openGallery,
-                vm::deletePhoto
-            )
-    }
+fun MainScreen (vm : PhotoViewModel = viewModel()) {
+    BaseComponent(
+        vm.fullName.value,
+        vm.photoURI,
+        vm::pickProfilePicture,
+        vm::deleteProfilePicture
+    )
 }
 
 @Composable
 fun BaseComponent (
-    fullName : String,
-    photoBitmap : Bitmap?,
-    photoURI : Uri?,
-    openCamera : () -> Unit,
-    galleryLauncher: ActivityResultLauncher<PickVisualMediaRequest>,
-    openGallery : (ActivityResultLauncher<PickVisualMediaRequest>) -> Unit,
-    deletePhoto : () -> Unit
+    fullName: String,
+    photoURI: Uri?,
+    pickProfilePicture: (Uri?) -> Unit,
+    deleteProfilePicture: () -> Unit,
 ) {
     val circleSize = 200
+
+    val context = LocalContext.current
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            pickProfilePicture(uri)
+        }
+    )
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            pickProfilePicture(uri)
+        }
+    )
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                Log.e(null, "SONO QUI")
+                pickProfilePicture(ComposeFileProvider.getImageUri(context))
+            }
+            else {
+                Log.e(null, "NON DOVREI ESSERE QUI")
+            }
+        }
+    )
 
     Column (
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        if (photoBitmap != null) {
-            Monogram(fullName, circleSize)
-        }
-        else if (photoURI != null) {
+        if (photoURI != null) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(photoURI)
@@ -100,20 +101,29 @@ fun BaseComponent (
                 placeholder = painterResource(R.drawable.image_not_found),
                 contentDescription = "Your profile picture",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.clip(CircleShape).size(circleSize.dp)
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(circleSize.dp)
             )
         }
         else {
             Monogram(fullName, circleSize)
         }
         Text(fullName, style = MaterialTheme.typography.headlineLarge)
-        Button(onClick = { openCamera() }) {
+        Button(onClick = { cameraLauncher.launch(ComposeFileProvider.getImageUri(context)) }) {
             Text("Camera")
         }
-        Button(onClick = { openGallery(galleryLauncher) }) {
+        Button(
+            onClick = { galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+        ) {
+            Text("Gallery BELLA")
+        }
+        Button(
+            onClick = { imagePicker.launch("image/*") }
+        ) {
             Text("Gallery")
         }
-        Button(onClick = { deletePhoto() }) {
+        Button(onClick = { deleteProfilePicture() }) {
             Text("Delete")
         }
     }
@@ -162,4 +172,30 @@ fun Monogram (fullName: String, monogramSize: Int) {
             )
         }
     )
+}
+
+class ComposeFileProvider : FileProvider(
+    R.xml.filepaths
+) {
+    companion object {
+        fun getImageUri(context: Context): Uri {
+            // 1
+            val directory = File(context.cacheDir, "images")
+            directory.mkdirs()
+            // 2
+            val file = File.createTempFile(
+                "selected_image_",
+                ".jpg",
+                directory
+            )
+            // 3
+            val authority = context.packageName + ".fileprovider"
+            // 4
+            return getUriForFile(
+                context,
+                authority,
+                file,
+            )
+        }
+    }
 }
