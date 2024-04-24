@@ -45,7 +45,9 @@ fun MainScreen (vm : PhotoViewModel = viewModel()) {
         vm.fullName.value,
         vm.photoURI,
         vm::pickProfilePicture,
-        vm::deleteProfilePicture
+        vm::deleteProfilePicture,
+        vm.isOk,
+        vm::setOkUri
     )
 }
 
@@ -55,6 +57,8 @@ fun BaseComponent (
     photoURI: Uri?,
     pickProfilePicture: (Uri?) -> Unit,
     deleteProfilePicture: () -> Unit,
+    isOk: Boolean,
+    setOkUri: (Boolean) -> Unit
 ) {
     val circleSize = 200
 
@@ -63,6 +67,7 @@ fun BaseComponent (
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
+            setOkUri(uri != null)
             pickProfilePicture(uri)
         }
     )
@@ -70,6 +75,7 @@ fun BaseComponent (
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
+            setOkUri(uri != null)
             pickProfilePicture(uri)
         }
     )
@@ -77,13 +83,7 @@ fun BaseComponent (
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
-            if (success) {
-                Log.e(null, "SONO QUI")
-                pickProfilePicture(ComposeFileProvider.getImageUri(context))
-            }
-            else {
-                Log.e(null, "NON DOVREI ESSERE QUI")
-            }
+            setOkUri(success)
         }
     )
 
@@ -92,7 +92,7 @@ fun BaseComponent (
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        if (photoURI != null) {
+        if (isOk && photoURI != null) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(photoURI)
@@ -110,7 +110,11 @@ fun BaseComponent (
             Monogram(fullName, circleSize)
         }
         Text(fullName, style = MaterialTheme.typography.headlineLarge)
-        Button(onClick = { cameraLauncher.launch(ComposeFileProvider.getImageUri(context)) }) {
+        Button(onClick = {
+            val uri = ComposeFileProvider.getImageUri(context)
+            pickProfilePicture(uri)
+            cameraLauncher.launch(uri)
+        }) {
             Text("Camera")
         }
         Button(

@@ -21,6 +21,13 @@ class PhotoViewModel : ViewModel() {
     var photoURI by mutableStateOf<Uri?>(null)
         private set
 
+    var isOk by mutableStateOf(false)
+        private set
+
+    fun setOkUri (value: Boolean) {
+        isOk = value
+    }
+
     fun pickProfilePicture (uri: Uri?) {
         if ( uri != null ) {
             photoURI = uri
