@@ -21,21 +21,26 @@ class PhotoViewModel : ViewModel() {
     var photoURI by mutableStateOf<Uri?>(null)
         private set
 
-    var isOk by mutableStateOf(false)
+    var photoBitmap by mutableStateOf<Bitmap?>(null)
         private set
 
-    fun setOkUri (value: Boolean) {
-        isOk = value
-    }
-
-    fun pickProfilePicture (uri: Uri?) {
+    fun pickProfilePictureFromGallery (uri: Uri?) {
         if ( uri != null ) {
             photoURI = uri
+            photoBitmap = null
+        }
+    }
+
+    fun pickProfilePictureFromCamera (bitmap: Bitmap?) {
+        if ( bitmap != null ) {
+            photoBitmap = bitmap
+            photoURI = null
         }
     }
 
     fun deleteProfilePicture () {
         photoURI = null
+        photoBitmap = null
     }
 
 }

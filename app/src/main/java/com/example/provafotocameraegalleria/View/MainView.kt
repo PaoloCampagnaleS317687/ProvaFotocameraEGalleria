@@ -1,15 +1,18 @@
 package com.example.provafotocameraegalleria.View
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
@@ -21,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -44,10 +48,10 @@ fun MainScreen (vm : PhotoViewModel = viewModel()) {
     BaseComponent(
         vm.fullName.value,
         vm.photoURI,
-        vm::pickProfilePicture,
-        vm::deleteProfilePicture,
-        vm.isOk,
-        vm::setOkUri
+        vm.photoBitmap,
+        vm::pickProfilePictureFromGallery,
+        vm::pickProfilePictureFromCamera,
+        vm::deleteProfilePicture
     )
 }
 
@@ -55,35 +59,31 @@ fun MainScreen (vm : PhotoViewModel = viewModel()) {
 fun BaseComponent (
     fullName: String,
     photoURI: Uri?,
-    pickProfilePicture: (Uri?) -> Unit,
+    photoBitmap: Bitmap?,
+    pickProfilePictureFromGallery: (Uri?) -> Unit,
+    pickProfilePictureFromCamera: (Bitmap?) -> Unit,
     deleteProfilePicture: () -> Unit,
-    isOk: Boolean,
-    setOkUri: (Boolean) -> Unit
 ) {
     val circleSize = 200
-
-    val context = LocalContext.current
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
-            setOkUri(uri != null)
-            pickProfilePicture(uri)
+            pickProfilePictureFromGallery(uri)
         }
     )
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            setOkUri(uri != null)
-            pickProfilePicture(uri)
+            pickProfilePictureFromGallery(uri)
         }
     )
 
     val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture(),
-        onResult = { success ->
-            setOkUri(success)
+        contract = ActivityResultContracts.TakePicturePreview(),
+        onResult = { bitmap ->
+            pickProfilePictureFromCamera(bitmap)
         }
     )
 
@@ -92,7 +92,7 @@ fun BaseComponent (
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        if (isOk && photoURI != null) {
+        if (photoURI != null) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(photoURI)
@@ -106,14 +106,22 @@ fun BaseComponent (
                     .size(circleSize.dp)
             )
         }
+        else if (photoBitmap != null) {
+            Image(
+                bitmap = photoBitmap.asImageBitmap(),
+                contentDescription = "Your profile picture",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size((0.8f * circleSize).dp)
+            )
+        }
         else {
             Monogram(fullName, circleSize)
         }
         Text(fullName, style = MaterialTheme.typography.headlineLarge)
         Button(onClick = {
-            val uri = ComposeFileProvider.getImageUri(context)
-            pickProfilePicture(uri)
-            cameraLauncher.launch(uri)
+            cameraLauncher.launch(null)
         }) {
             Text("Camera")
         }
@@ -176,30 +184,4 @@ fun Monogram (fullName: String, monogramSize: Int) {
             )
         }
     )
-}
-
-class ComposeFileProvider : FileProvider(
-    R.xml.filepaths
-) {
-    companion object {
-        fun getImageUri(context: Context): Uri {
-            // 1
-            val directory = File(context.cacheDir, "images")
-            directory.mkdirs()
-            // 2
-            val file = File.createTempFile(
-                "selected_image_",
-                ".jpg",
-                directory
-            )
-            // 3
-            val authority = context.packageName + ".fileprovider"
-            // 4
-            return getUriForFile(
-                context,
-                authority,
-                file,
-            )
-        }
-    }
 }
